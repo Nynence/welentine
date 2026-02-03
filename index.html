@@ -187,6 +187,15 @@
             opacity: 0;
         }
 
+        .header-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
+            display: block;
+        }
+
+
         @keyframes fall {
             0% {
                 opacity: 1;
@@ -202,10 +211,10 @@
 <body>
     <div class="container" id="questionScreen">
         <h1>💕 Hey Wendy! 💕</h1>
-        <div class="header-image" id="headerImage">
-            <img src="rishme.jpg" alt="Header" id="headerImg">
-            <div class="image-placeholder" id="headerPlaceholder">Add header.jpg for image</div>
+        <div class="header-image">
+            <img src="rishme.jpg" alt="Header" class="header-img">
         </div>
+
         <p class="question">Will you be my Valentine? 👉👈 pls</p>
         <div class="timer" id="timer">Time left: 30s</div>
         <div class="buttons">
