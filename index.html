@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Will You Be My Valentine? 💕</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Arial', sans-serif;
@@ -19,6 +15,7 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            transition: background 0.2s linear;
         }
 
         .container {
@@ -47,23 +44,12 @@
             overflow: hidden;
         }
 
-        .header-image img {
+        .header-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-        }
-
-        .image-placeholder {
-            width: 100%;
-            height: 100%;
-            background: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 0.9em;
-            border: 2px dashed #ddd;
             border-radius: 15px;
+            display: block;
         }
 
         @keyframes pulse {
@@ -82,6 +68,7 @@
             color: #ff1744;
             font-weight: bold;
             margin-bottom: 30px;
+            transition: transform 0.15s ease;
         }
 
         .buttons {
@@ -111,9 +98,7 @@
             transition: transform 0.3s ease;
         }
 
-        #yesBtn:hover {
-            background: #d81b60;
-        }
+        #yesBtn:hover { background: #d81b60; }
 
         #noBtn {
             background: #9e9e9e;
@@ -123,13 +108,9 @@
             z-index: 999;
         }
 
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
 
-        .success-screen {
-            animation: fadeIn 1s ease;
-        }
+        .success-screen { animation: fadeIn 1s ease; }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.9); }
@@ -148,13 +129,6 @@
             margin-bottom: 20px;
             line-height: 1.6;
         }
-        .success-gif {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 15px;
-        }
-
 
         .photo-placeholder {
             width: 300px;
@@ -168,6 +142,15 @@
             background: #f5f5f5;
             color: #999;
             font-size: 1.1em;
+            overflow: hidden;
+        }
+
+        .success-gif {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            display: block;
         }
 
         .hearts {
@@ -187,24 +170,24 @@
             opacity: 0;
         }
 
-        .header-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 15px;
-            display: block;
+        @keyframes fall {
+            0% { opacity: 1; top: -10%; }
+            100% { opacity: 0; top: 100%; }
         }
 
+        /* 🚨 PANIC MODE STYLES */
+        body.panic-red {
+            background: #ff0000 !important;
+        }
 
-        @keyframes fall {
-            0% {
-                opacity: 1;
-                top: -10%;
-            }
-            100% {
-                opacity: 0;
-                top: 100%;
-            }
+        .timer.panic {
+            transform: scale(1.15);
+            animation: timerPanic 0.6s ease-in-out infinite;
+        }
+
+        @keyframes timerPanic {
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.25); }
         }
     </style>
 </head>
@@ -226,7 +209,7 @@
     <div class="container hidden" id="successScreen">
         <div class="success-screen">
             <h2>🎉 Yipeeeee! 🎉</h2>
-            <p>Hehehe I'm so happy you said yes! I love you! 💕  </p>
+            <p>Hehehe I'm so happy you said yes! I love you! 💕</p>
             <div class="photo-placeholder" id="photoContainer">
                 <img src="wgif.gif" alt="Celebration gif" class="success-gif">
             </div>
@@ -240,52 +223,113 @@
     <script>
         let timeLeft = 30;
         let yesButtonScale = 1;
-        const maxYesScale = 2.5; // Cap the Yes button size
+        const maxYesScale = 2.5;
+
         const questionScreen = document.getElementById('questionScreen');
         const successScreen = document.getElementById('successScreen');
         const yesBtn = document.getElementById('yesBtn');
         const noBtn = document.getElementById('noBtn');
         const timerDisplay = document.getElementById('timer');
-        const safeDistance = 120; // Closer distance - almost in reach!
+
+        const safeDistance = 120;
         let noBtnInitialized = false;
         let isMoving = false;
         let lastMoveTime = 0;
         let originalNoBtnText = 'No';
 
-        // Initialize No button position (centered, to the right of Yes)
+        // 🚨 Panic mode state
+        let panicInterval = null;
+        let panicActive = false;
+
+        const normalGradient = "linear-gradient(135deg, #ff6b9d 0%, #c06c84 100%)";
+
+        function getPanicFlashMs(t) {
+            // t is seconds left: 5..1
+            // 5 -> 1000, 4 -> 800, 3 -> 600, 2 -> 400, 1 -> 200
+            return Math.max(200, 200 * t);
+        }
+
+        function startPanicMode() {
+            if (panicActive) return;
+            panicActive = true;
+
+            timerDisplay.classList.add('panic');
+
+            let flashOn = false;
+
+            function scheduleNextFlash() {
+                if (!panicActive) return;
+
+                const ms = getPanicFlashMs(timeLeft);
+
+                // Make the timer pulse faster as time drops
+                timerDisplay.style.animationDuration = (ms / 1000) + 's';
+
+                flashOn = !flashOn;
+                if (flashOn) {
+                    document.body.classList.add('panic-red');
+                } else {
+                    document.body.classList.remove('panic-red');
+                    document.body.style.background = normalGradient;
+                }
+
+                panicInterval = setTimeout(scheduleNextFlash, ms);
+            }
+
+            scheduleNextFlash();
+        }
+
+        function stopPanicMode() {
+            panicActive = false;
+
+            if (panicInterval) {
+                clearTimeout(panicInterval);
+                panicInterval = null;
+            }
+
+            document.body.classList.remove('panic-red');
+            document.body.style.background = normalGradient;
+
+            timerDisplay.classList.remove('panic');
+            timerDisplay.style.animationDuration = '';
+        }
+
+        // Initialize No button position
         function initializeNoButton() {
-            const containerRect = questionScreen.getBoundingClientRect();
             const yesRect = yesBtn.getBoundingClientRect();
-            
-            // Position it to the right of Yes button, centered
+
             const initialX = yesRect.right + 30;
             const initialY = yesRect.top + (yesRect.height / 2) - (noBtn.offsetHeight / 2);
-            
+
             noBtn.style.left = initialX + 'px';
             noBtn.style.top = initialY + 'px';
             noBtnInitialized = true;
         }
 
-        // Call after a short delay to ensure layout is ready
         setTimeout(initializeNoButton, 100);
 
         // Countdown timer
         const countdown = setInterval(() => {
             timeLeft--;
             timerDisplay.textContent = `Time left: ${timeLeft}s`;
-            
+
+            // 🚨 Panic mode trigger
+            if (timeLeft <= 5 && timeLeft > 0) {
+                startPanicMode();
+            }
+
             if (timeLeft <= 0) {
                 clearInterval(countdown);
+                stopPanicMode(); // reset visuals
                 showSuccess();
             }
         }, 1000);
 
-        // Track mouse movement continuously
+        // Track mouse movement continuously (throttled)
         document.addEventListener('mousemove', (e) => {
             if (questionScreen.classList.contains('hidden') || !noBtnInitialized) return;
-            
+
             const now = Date.now();
-            // Throttle movement slightly for smoother animation
             if (now - lastMoveTime > 30) {
                 moveNoButtonAway(e.clientX, e.clientY);
                 lastMoveTime = now;
@@ -293,129 +337,110 @@
         });
 
         function moveNoButtonAway(mouseX, mouseY) {
-            if (isMoving) return; // Prevent overlapping movements
-            
+            if (isMoving) return;
+
             const btnRect = noBtn.getBoundingClientRect();
-            
-            // Calculate center of No button
+
             const btnCenterX = btnRect.left + btnRect.width / 2;
             const btnCenterY = btnRect.top + btnRect.height / 2;
-            
-            // Calculate distance between mouse and button center
+
             const distance = Math.sqrt(
-                Math.pow(mouseX - btnCenterX, 2) + Math.pow(mouseY - btnCenterY, 2)
+                Math.pow(mouseX - btnCenterX, 2) +
+                Math.pow(mouseY - btnCenterY, 2)
             );
-            
-            // Check if cursor is directly on the button (hover)
+
             const isOnButton = (
-                mouseX >= btnRect.left && 
-                mouseX <= btnRect.right && 
-                mouseY >= btnRect.top && 
+                mouseX >= btnRect.left &&
+                mouseX <= btnRect.right &&
+                mouseY >= btnRect.top &&
                 mouseY <= btnRect.bottom
             );
-            
-            // Fallback: Change text to "Yes!" if cursor is directly on the button
+
+            // Subtle fallback: text only
             if (isOnButton) {
-                noBtn.textContent = 'Yes!';
-                noBtn.style.background = '#ab8a8a';
+                noBtn.textContent = 'Yes';
             } else {
-                // Reset text when not hovering
                 noBtn.textContent = originalNoBtnText;
-                noBtn.style.background = '#9e9e9e';
             }
-            
-            // If mouse is too close, move the button away
+
             if (distance < safeDistance) {
                 isMoving = true;
-                
-                // Add randomness to the movement
-                const randomAngleOffset = (Math.random() - 0.5) * Math.PI / 3; // ±30 degrees
+
+                const randomAngleOffset = (Math.random() - 0.5) * Math.PI / 3;
                 const baseAngle = Math.atan2(btnCenterY - mouseY, btnCenterX - mouseX);
                 const angle = baseAngle + randomAngleOffset;
-                
-                // Random move distance between safeDistance and safeDistance + 100
+
                 const moveDistance = safeDistance + Math.random() * 150;
-                
+
                 let newX = mouseX + Math.cos(angle) * moveDistance;
                 let newY = mouseY + Math.sin(angle) * moveDistance;
-                
-                // Keep button within viewport bounds with padding
+
                 const btnWidth = btnRect.width;
                 const btnHeight = btnRect.height;
                 const padding = 30;
-                
+
                 const minX = padding;
                 const maxX = window.innerWidth - btnWidth - padding;
                 const minY = padding;
                 const maxY = window.innerHeight - btnHeight - padding;
-                
-                // Constrain to viewport
+
                 newX = Math.max(minX, Math.min(newX, maxX));
                 newY = Math.max(minY, Math.min(newY, maxY));
-                
-                // Check if we're in a corner and add extra randomness if so
+
                 const isInCorner = (
                     (newX < padding + 50 || newX > maxX - 50) &&
                     (newY < padding + 50 || newY > maxY - 50)
                 );
-                
+
                 if (isInCorner) {
-                    // Move to a random position away from corners
                     const centerX = window.innerWidth / 2;
                     const centerY = window.innerHeight / 2;
-                    
-                    // Pick a random quadrant different from current
+
                     const quadrant = Math.floor(Math.random() * 4);
-                    switch(quadrant) {
-                        case 0: // top-left area
+                    switch (quadrant) {
+                        case 0:
                             newX = minX + Math.random() * (centerX - minX - 100);
                             newY = minY + Math.random() * (centerY - minY - 100);
                             break;
-                        case 1: // top-right area
+                        case 1:
                             newX = centerX + Math.random() * (maxX - centerX - 100);
                             newY = minY + Math.random() * (centerY - minY - 100);
                             break;
-                        case 2: // bottom-left area
+                        case 2:
                             newX = minX + Math.random() * (centerX - minX - 100);
                             newY = centerY + Math.random() * (maxY - centerY - 100);
                             break;
-                        case 3: // bottom-right area
+                        case 3:
                             newX = centerX + Math.random() * (maxX - centerX - 100);
                             newY = centerY + Math.random() * (maxY - centerY - 100);
                             break;
                     }
                 }
-                
-                // Ensure we're far enough from mouse in new position
+
                 const finalDistance = Math.sqrt(
-                    Math.pow(mouseX - newX, 2) + Math.pow(mouseY - newY, 2)
+                    Math.pow(mouseX - newX, 2) +
+                    Math.pow(mouseY - newY, 2)
                 );
-                
-                // If still too close, add more distance in a random direction
+
                 if (finalDistance < safeDistance * 1.5) {
                     const escapeAngle = Math.random() * Math.PI * 2;
                     newX += Math.cos(escapeAngle) * 150;
                     newY += Math.sin(escapeAngle) * 150;
-                    
-                    // Constrain again
+
                     newX = Math.max(minX, Math.min(newX, maxX));
                     newY = Math.max(minY, Math.min(newY, maxY));
                 }
-                
+
                 noBtn.style.left = newX + 'px';
                 noBtn.style.top = newY + 'px';
-                
-                // Make Yes button bigger (with cap)
+
                 if (yesButtonScale < maxYesScale) {
                     yesButtonScale += 0.04;
                     yesButtonScale = Math.min(yesButtonScale, maxYesScale);
                     yesBtn.style.transform = `scale(${yesButtonScale})`;
                 }
-                
-                // Reset moving flag after animation completes
-                setTimeout(() => {
-                    isMoving = false;
-                }, 220);
+
+                setTimeout(() => { isMoving = false; }, 220);
             }
         }
 
@@ -423,17 +448,15 @@
         noBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
-            // If the button currently says "Yes!", they caught it! Show success
+
             if (noBtn.textContent.includes('Yes')) {
                 showSuccess();
             } else {
-                // Otherwise just move it to a random far position
                 const randomX = Math.random() * (window.innerWidth - 200) + 50;
                 const randomY = Math.random() * (window.innerHeight - 200) + 50;
                 noBtn.style.left = randomX + 'px';
                 noBtn.style.top = randomY + 'px';
-                
+
                 if (yesButtonScale < maxYesScale) {
                     yesButtonScale += 0.2;
                     yesButtonScale = Math.min(yesButtonScale, maxYesScale);
@@ -442,16 +465,15 @@
             }
         });
 
-        // Prevent mousedown on No button
         noBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
         });
 
-        // Handle touch devices
+        // Touch devices
         document.addEventListener('touchmove', (e) => {
             if (questionScreen.classList.contains('hidden') || !noBtnInitialized) return;
-            
+
             const touch = e.touches[0];
             const now = Date.now();
             if (now - lastMoveTime > 30) {
@@ -462,23 +484,24 @@
 
         document.addEventListener('touchstart', (e) => {
             if (questionScreen.classList.contains('hidden') || !noBtnInitialized) return;
-            
+
             const touch = e.touches[0];
             const btnRect = noBtn.getBoundingClientRect();
-            
-            // Check if touch is near No button
-            if (touch.clientX >= btnRect.left - 50 && touch.clientX <= btnRect.right + 50 &&
-                touch.clientY >= btnRect.top - 50 && touch.clientY <= btnRect.bottom + 50) {
+
+            if (
+                touch.clientX >= btnRect.left - 50 && touch.clientX <= btnRect.right + 50 &&
+                touch.clientY >= btnRect.top - 50 && touch.clientY <= btnRect.bottom + 50
+            ) {
                 e.preventDefault();
                 moveNoButtonAway(touch.clientX, touch.clientY);
             }
         }, { passive: false });
 
-        // Yes button click
         yesBtn.addEventListener('click', showSuccess);
 
         function showSuccess() {
             clearInterval(countdown);
+            stopPanicMode(); // ✅ reset panic visuals when Yes is clicked
             questionScreen.classList.add('hidden');
             successScreen.classList.remove('hidden');
             createHearts();
@@ -493,35 +516,12 @@
                 heart.style.left = Math.random() * 100 + '%';
                 heart.style.animationDuration = (Math.random() * 2 + 2) + 's';
                 heartsContainer.appendChild(heart);
-                
-                setTimeout(() => {
-                    heart.remove();
-                }, 3000);
+
+                setTimeout(() => { heart.remove(); }, 3000);
             }, 300);
         }
 
-        // Try to load header image if available
-        const headerImg = document.getElementById('headerImg');
-        const headerPlaceholder = document.getElementById('headerPlaceholder');
-        const testHeaderImg = new Image();
-        testHeaderImg.onload = function() {
-            headerImg.style.display = 'block';
-            headerPlaceholder.style.display = 'none';
-        };
-        testHeaderImg.src = 'header.jpg';
-
-        // Try to load photo if available
-        const photoContainer = document.getElementById('photoContainer');
-        const img = new Image();
-        img.onload = function() {
-            photoContainer.innerHTML = '';
-            photoContainer.appendChild(img);
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '15px';
-        };
-        img.src = 'wendy.jpg'; // Replace with actual photo path
+        // ✅ Removed old header/photo loader code (you no longer use headerPlaceholder / wendy.jpg logic)
     </script>
 </body>
 </html>
