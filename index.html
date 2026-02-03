@@ -196,6 +196,7 @@
         const yesBtn = document.getElementById('yesBtn');
         const noBtn = document.getElementById('noBtn');
         const timerDisplay = document.getElementById('timer');
+        const safeDistance = 150; // Minimum distance the No button stays away from cursor
 
         // Countdown timer
         const countdown = setInterval(() => {
@@ -208,47 +209,108 @@
             }
         }, 1000);
 
-        // Make No button run away from mouse
-        noBtn.addEventListener('mouseenter', (e) => {
-            const containerRect = questionScreen.getBoundingClientRect();
+        // Track mouse movement continuously
+        document.addEventListener('mousemove', (e) => {
+            if (questionScreen.classList.contains('hidden')) return;
+            
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
             const btnRect = noBtn.getBoundingClientRect();
+            const containerRect = questionScreen.getBoundingClientRect();
             
-            // Random position within container
-            const maxX = containerRect.width - btnRect.width - 40;
-            const maxY = 150; // Keep it in the button area
+            // Calculate center of No button
+            const btnCenterX = btnRect.left + btnRect.width / 2;
+            const btnCenterY = btnRect.top + btnRect.height / 2;
             
-            const randomX = Math.random() * maxX;
-            const randomY = Math.random() * maxY;
+            // Calculate distance between mouse and button center
+            const distance = Math.sqrt(
+                Math.pow(mouseX - btnCenterX, 2) + Math.pow(mouseY - btnCenterY, 2)
+            );
             
-            noBtn.style.left = randomX + 'px';
-            noBtn.style.bottom = 'auto';
-            noBtn.style.top = randomY + 'px';
-            noBtn.style.transform = 'none';
-            
-            // Make Yes button bigger
+            // If mouse is too close, move the button away
+            if (distance < safeDistance) {
+                // Calculate direction away from mouse
+                const angle = Math.atan2(btnCenterY - mouseY, btnCenterX - mouseX);
+                
+                // Calculate new position (move away from mouse)
+                let newX = mouseX + Math.cos(angle) * safeDistance;
+                let newY = mouseY + Math.sin(angle) * safeDistance;
+                
+                // Keep button within container bounds
+                const btnWidth = btnRect.width;
+                const btnHeight = btnRect.height;
+                const padding = 20;
+                
+                // Constrain to container
+                newX = Math.max(containerRect.left + padding, Math.min(newX - btnWidth / 2, containerRect.right - btnWidth - padding));
+                newY = Math.max(containerRect.top + padding, Math.min(newY - btnHeight / 2, containerRect.bottom - btnHeight - padding));
+                
+                // Convert to relative position
+                const relativeX = newX - containerRect.left;
+                const relativeY = newY - containerRect.top;
+                
+                noBtn.style.left = relativeX + 'px';
+                noBtn.style.top = relativeY + 'px';
+                noBtn.style.bottom = 'auto';
+                noBtn.style.transform = 'none';
+                
+                // Make Yes button bigger
+                yesButtonScale += 0.02;
+                yesBtn.style.transform = `translate(-50%, -50%) scale(${yesButtonScale})`;
+            }
+        });
+
+        // Prevent clicking the No button
+        noBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Move it away as a backup
+            const containerRect = questionScreen.getBoundingClientRect();
+            noBtn.style.left = Math.random() * (containerRect.width - 100) + 'px';
+            noBtn.style.top = Math.random() * 150 + 'px';
             yesButtonScale += 0.1;
             yesBtn.style.transform = `translate(-50%, -50%) scale(${yesButtonScale})`;
         });
 
-        // Make No button also run away on touch devices
-        noBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const containerRect = questionScreen.getBoundingClientRect();
+        // Handle touch devices
+        document.addEventListener('touchmove', (e) => {
+            if (questionScreen.classList.contains('hidden')) return;
+            
+            const touch = e.touches[0];
+            const mouseX = touch.clientX;
+            const mouseY = touch.clientY;
             const btnRect = noBtn.getBoundingClientRect();
+            const containerRect = questionScreen.getBoundingClientRect();
             
-            const maxX = containerRect.width - btnRect.width - 40;
-            const maxY = 150;
+            const btnCenterX = btnRect.left + btnRect.width / 2;
+            const btnCenterY = btnRect.top + btnRect.height / 2;
             
-            const randomX = Math.random() * maxX;
-            const randomY = Math.random() * maxY;
+            const distance = Math.sqrt(
+                Math.pow(mouseX - btnCenterX, 2) + Math.pow(mouseY - btnCenterY, 2)
+            );
             
-            noBtn.style.left = randomX + 'px';
-            noBtn.style.bottom = 'auto';
-            noBtn.style.top = randomY + 'px';
-            noBtn.style.transform = 'none';
-            
-            yesButtonScale += 0.1;
-            yesBtn.style.transform = `translate(-50%, -50%) scale(${yesButtonScale})`;
+            if (distance < safeDistance) {
+                const angle = Math.atan2(btnCenterY - mouseY, btnCenterX - mouseX);
+                let newX = mouseX + Math.cos(angle) * safeDistance;
+                let newY = mouseY + Math.sin(angle) * safeDistance;
+                
+                const btnWidth = btnRect.width;
+                const btnHeight = btnRect.height;
+                const padding = 20;
+                
+                newX = Math.max(containerRect.left + padding, Math.min(newX - btnWidth / 2, containerRect.right - btnWidth - padding));
+                newY = Math.max(containerRect.top + padding, Math.min(newY - btnHeight / 2, containerRect.bottom - btnHeight - padding));
+                
+                const relativeX = newX - containerRect.left;
+                const relativeY = newY - containerRect.top;
+                
+                noBtn.style.left = relativeX + 'px';
+                noBtn.style.top = relativeY + 'px';
+                noBtn.style.bottom = 'auto';
+                noBtn.style.transform = 'none';
+                
+                yesButtonScale += 0.02;
+                yesBtn.style.transform = `translate(-50%, -50%) scale(${yesButtonScale})`;
+            }
         });
 
         // Yes button click
